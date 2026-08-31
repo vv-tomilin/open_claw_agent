@@ -1,0 +1,11 @@
+[Unit]
+Description=Еженедельная проверка резервной копии персонального агента
+
+[Timer]
+OnCalendar=Sun *-*-* 05:30:00
+Persistent=true
+RandomizedDelaySec=30m
+Unit=personal-agent-backup-check.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,65 @@
+{
+  // Этот файл является исходным шаблоном. prepare-host.sh копирует его в persistent state.
+  gateway: {
+    mode: "local",
+    bind: "lan",
+    auth: {
+      mode: "token",
+      token: "${OPENCLAW_GATEWAY_TOKEN}",
+    },
+    controlUi: {
+      allowedOrigins: ["${OPENCLAW_CONTROL_UI_ORIGIN}"],
+    },
+  },
+
+  agents: {
+    defaults: {
+      workspace: "/home/node/.openclaw/workspace",
+      model: {
+        primary: "${PRIMARY_MODEL}",
+        fallbacks: [],
+      },
+      utilityModel: "${UTILITY_MODEL}",
+      models: {
+        "openrouter/*": {},
+      },
+      subagents: {
+        model: "${UTILITY_MODEL}",
+      },
+    },
+  },
+
+  channels: {
+    telegram: {
+      enabled: true,
+      botToken: "${TELEGRAM_BOT_TOKEN}",
+      dmPolicy: "pairing",
+      groupPolicy: "disabled",
+    },
+  },
+
+  // Агент может читать веб-источники и память, отправлять сообщения и создавать
+  // изолированные подзадачи. Shell, изменение файлов и управление Gateway запрещены.
+  tools: {
+    profile: "minimal",
+    alsoAllow: [
+      "group:web",
+      "group:memory",
+      "group:messaging",
+      "sessions_spawn",
+      "sessions_yield",
+      "subagents",
+    ],
+    deny: [
+      "group:runtime",
+      "group:fs",
+      "gateway",
+      "cron",
+      "sessions_send",
+    ],
+  },
+
+  commands: {
+    restart: false,
+  },
+}

@@ -1,0 +1,36 @@
+# Локальная конфигурация и секреты
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+
+# Состояние OpenClaw и локальные данные
+state/
+data/
+runtime/
+backups/
+restore/
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.tar.gz
+*.restic
+
+# Временные файлы и логи
+tmp/
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*.local.json

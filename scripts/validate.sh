@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/lib.sh
+. "${SCRIPT_DIR}/lib.sh"
+
+failed=0
+
+if grep -Eq 'OPENCLAW_(IMAGE|VERSION)=.*latest' "${PROJECT_DIR}/.env.example"; then
+  printf 'ОШИБКА: в .env.example обнаружен latest.\n' >&2
+  failed=1
+else
+  printf 'УСПЕХ: версия OpenClaw закреплена.\n'
+fi
+
+for required in compose.yaml .env.example .gitignore README.md config/openclaw.json; do
+  if [[ ! -f "${PROJECT_DIR}/${required}" ]]; then
+    printf 'ОШИБКА: отсутствует %s.\n' "${required}" >&2
+    failed=1
+  fi
+done
+
+if command -v node >/dev/null 2>&1; then
+  node "${PROJECT_DIR}/scripts/validate-config.mjs"
+else
+  printf 'ПРОПУСК: Node.js не установлен; базовая проверка JSON5 не выполнена.\n'
+fi
+
+if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+  docker compose --project-directory "${PROJECT_DIR}" \
+    --env-file "${PROJECT_DIR}/.env.example" config --quiet
+  printf 'УСПЕХ: docker compose config.\n'
+else
+  printf 'ПРОПУСК: Docker Compose не установлен.\n'
+fi
+
+if command -v shellcheck >/dev/null 2>&1; then
+  shellcheck "${PROJECT_DIR}"/scripts/*.sh
+  printf 'УСПЕХ: shellcheck.\n'
+else
+  printf 'ПРОПУСК: shellcheck не установлен.\n'
+fi
+
+if git -C "${PROJECT_DIR}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  git -C "${PROJECT_DIR}" diff --check
+  git -C "${PROJECT_DIR}" diff --cached --check
+  printf 'УСПЕХ: git diff --check.\n'
+else
+  printf 'ПРОПУСК: каталог ещё не инициализирован как Git repository.\n'
+fi
+
+[[ "${failed}" -eq 0 ]] || exit 1
+printf 'УСПЕХ: безопасная локальная валидация завершена.\n'

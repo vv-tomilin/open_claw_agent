@@ -1,0 +1,12 @@
+[Unit]
+Description=Проверка целостности резервной копии персонального агента
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/personal-agent.conf
+ExecStart=/bin/bash -lc 'cd "$PERSONAL_AGENT_PROJECT_DIR" && exec ./scripts/backup-maintenance.sh check'
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true

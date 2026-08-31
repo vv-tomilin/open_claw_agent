@@ -1,0 +1,89 @@
+name: personal-agent
+
+x-openclaw-common: &openclaw-common
+  image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:${OPENCLAW_VERSION}}
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    HOME: /home/node
+    OPENCLAW_HOME: /home/node
+    OPENCLAW_STATE_DIR: /home/node/.openclaw
+    OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json
+    OPENCLAW_CONFIG_DIR: /home/node/.openclaw
+    OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
+    OPENCLAW_GATEWAY_PORT: "18789"
+    OPENCLAW_CONTROL_UI_ORIGIN: http://${OPENCLAW_GATEWAY_HOST:-127.0.0.1}:${OPENCLAW_GATEWAY_PORT:-18789}
+    OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
+    OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+    TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+    PRIMARY_MODEL: ${PRIMARY_MODEL}
+    UTILITY_MODEL: ${UTILITY_MODEL}
+    HEAVY_MODEL: ${HEAVY_MODEL}
+    TZ: ${OPENCLAW_TZ:-UTC}
+  volumes:
+    - type: bind
+      source: ${PERSONAL_AGENT_DATA_DIR}/openclaw
+      target: /home/node/.openclaw
+    - type: bind
+      source: ${PERSONAL_AGENT_DATA_DIR}/workspace
+      target: /home/node/.openclaw/workspace
+    - type: bind
+      source: ${PERSONAL_AGENT_DATA_DIR}/auth-profile-secrets
+      target: /home/node/.config/openclaw
+    - type: bind
+      source: ${PERSONAL_AGENT_BACKUP_DIR}
+      target: /backup
+    - type: bind
+      source: ./skills
+      target: /home/node/.openclaw/workspace/skills
+      read_only: true
+  cap_drop:
+    - NET_RAW
+    - NET_ADMIN
+  security_opt:
+    - no-new-privileges:true
+  init: true
+
+services:
+  openclaw-gateway:
+    <<: *openclaw-common
+    restart: unless-stopped
+    command:
+      - node
+      - dist/index.js
+      - gateway
+      - --bind
+      - lan
+      - --port
+      - "18789"
+    ports:
+      - "${OPENCLAW_GATEWAY_HOST:-127.0.0.1}:${OPENCLAW_GATEWAY_PORT:-18789}:18789"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:18789/healthz').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    mem_limit: ${OPENCLAW_MEMORY_LIMIT:-4g}
+    cpus: ${OPENCLAW_CPU_LIMIT:-2.0}
+    logging:
+      driver: json-file
+      options:
+        max-size: ${OPENCLAW_LOG_MAX_SIZE:-10m}
+        max-file: ${OPENCLAW_LOG_MAX_FILE:-5}
+
+  openclaw-cli:
+    <<: *openclaw-common
+    network_mode: service:openclaw-gateway
+    entrypoint: ["node", "dist/index.js"]
+    stdin_open: true
+    tty: true
+    depends_on:
+      - openclaw-gateway
+    profiles:
+      - cli

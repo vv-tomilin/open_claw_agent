@@ -1,0 +1,9 @@
+# Серверные файлы должны клонироваться с LF даже из Windows.
+*.sh text eol=lf
+Makefile text eol=lf
+*.service text eol=lf
+*.timer text eol=lf
+*.conf.example text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
