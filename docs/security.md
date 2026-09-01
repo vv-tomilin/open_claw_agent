@@ -5,7 +5,7 @@
 - Gateway опубликован только на loopback host.
 - Gateway требует случайный token.
 - Telegram DMs используют pairing, groups отключены.
-- Agent tool profile разрешает web/memory/message/subagents, но запрещает shell, filesystem writes, Gateway и cron control.
+- Agent tool profile разрешает web/memory/message/subagents и filesystem-операции только внутри workspace, но запрещает shell, Gateway и cron control.
 - Контейнер не privileged, без Docker socket, host network, SSH keys и полного host filesystem.
 - `no-new-privileges`, drop `NET_RAW`/`NET_ADMIN`, официальный non-root image.
 - Image version закреплена; logs ограничены по размеру и количеству.
@@ -16,7 +16,9 @@
 
 Gateway bind внутри Docker должен быть `lan`, иначе Docker port publishing не работает; внешний port при этом ограничен `127.0.0.1`. CLI service разделяет network namespace Gateway по официальной схеме и используется только после старта. Offline scripts используют one-shot Gateway service с CLI entrypoint.
 
-Sandbox Docker для agent tools не включён, потому что потребовал бы Docker socket или отдельную sandbox infrastructure. Вместо этого опасные runtime/fs tools отсутствуют на policy layer. Это уменьшает функциональность, но соответствует read/monitor/report use case.
+Sandbox Docker для agent tools не включён, потому что потребовал бы Docker socket или отдельную sandbox infrastructure. Runtime tools отсутствуют на policy layer, а `tools.fs.workspaceOnly: true` ограничивает `read`/`write`/`edit`/`apply_patch` каталогом `/home/node/.openclaw/workspace`. Это позволяет сохранять bootstrap-профиль и memory-файлы, но не даёт агенту читать `.env`, runtime config, restic secrets или host filesystem за пределами workspace.
+
+Запись в workspace расширяет последствия prompt injection: недоверенный web-контент теоретически может склонить агента изменить memory или рабочие материалы. Поэтому Telegram остаётся закрытым через pairing, shell запрещён, важное состояние регулярно архивируется, а изменения профиля и памяти следует периодически просматривать.
 
 Systemd backup unit по умолчанию запускается как root ради переносимости шаблона. После setup его можно перевести на deployment-пользователя с UID `OPENCLAW_UID`, доступом к Docker daemon и restic backend credentials; каталоги state/backup/secrets уже принадлежат этому пользователю.
 

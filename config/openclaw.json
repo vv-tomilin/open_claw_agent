@@ -38,11 +38,13 @@
     },
   },
 
-  // Агент может читать веб-источники и память, отправлять сообщения и создавать
-  // изолированные подзадачи. Shell, изменение файлов и управление Gateway запрещены.
+  // Агент может читать веб-источники, вести память, изменять только свой workspace,
+  // отправлять сообщения и создавать изолированные подзадачи. Shell и управление
+  // Gateway запрещены.
   tools: {
     profile: "minimal",
     alsoAllow: [
+      "group:fs",
       "group:web",
       "group:memory",
       "group:messaging",
@@ -50,9 +52,11 @@
       "sessions_yield",
       "subagents",
     ],
+    fs: {
+      workspaceOnly: true,
+    },
     deny: [
       "group:runtime",
-      "group:fs",
       "gateway",
       "cron",
       "sessions_send",

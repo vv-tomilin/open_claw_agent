@@ -240,7 +240,7 @@ PASSWORD MANAGER
 
 ## Безопасность
 
-Compose не использует `privileged`, Docker socket, host network, `/root` или `~/.ssh`. Включены `no-new-privileges`, сброс `NET_RAW`/`NET_ADMIN`, loopback publishing и ротация Docker logs. Агент не получает runtime и filesystem tools. Детали и trade-offs: [security](docs/security.md).
+Compose не использует `privileged`, Docker socket, host network, `/root` или `~/.ssh`. Включены `no-new-privileges`, сброс `NET_RAW`/`NET_ADMIN`, loopback publishing и ротация Docker logs. Агент не получает runtime tools, а filesystem tools ограничены его workspace для профиля и памяти. Детали и trade-offs: [security](docs/security.md).
 
 ## Диагностика
 
