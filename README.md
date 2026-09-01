@@ -60,6 +60,22 @@ Gateway публикуется только на `127.0.0.1`. Для удалё�
 - минимум 2 ГБ RAM, рекомендуется 4 ГБ;
 - приватный Git repository и удалённое хранилище для restic.
 
+Если Docker и Docker Compose уже установлены, остальные системные зависимости на Debian/Ubuntu можно установить отдельно:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y restic curl jq make
+```
+
+Проверьте установку:
+
+```bash
+restic version
+curl --version
+jq --version
+make --version
+```
+
 `scripts/bootstrap-server.sh` устанавливает эти зависимости из официального Docker apt repository. Не запускайте его на рабочей станции: он предназначен только для будущего сервера.
 
 ## Первый deployment
