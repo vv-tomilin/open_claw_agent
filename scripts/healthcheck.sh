@@ -47,5 +47,5 @@ if command -v curl >/dev/null 2>&1; then
 fi
 
 require_restic_env
-restic snapshots --latest 1 >/dev/null
+restic cat config >/dev/null
 log "УСПЕХ: контейнер, постоянное состояние, проверка OpenClaw и restic доступны."

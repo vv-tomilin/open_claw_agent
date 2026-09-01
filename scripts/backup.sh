@@ -38,5 +38,5 @@ log "Передача проверенного bundle в зашифрованн�
   cd "${stage_dir}"
   restic backup --tag personal-agent .
 )
-restic snapshots --latest 1 --tag personal-agent >/dev/null
+restic snapshots --tag personal-agent >/dev/null
 log "УСПЕХ: резервная копия создана, проверена OpenClaw и сохранена в restic."
