@@ -14,7 +14,7 @@ else
   printf 'УСПЕХ: версия OpenClaw закреплена.\n'
 fi
 
-for required in compose.yaml .env.example .gitignore README.md config/openclaw.json; do
+for required in compose.yaml .env.example .gitignore README.md config/openclaw.json scripts/setup.sh; do
   if [[ ! -f "${PROJECT_DIR}/${required}" ]]; then
     printf 'ОШИБКА: отсутствует %s.\n' "${required}" >&2
     failed=1

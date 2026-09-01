@@ -18,11 +18,11 @@ Gateway bind внутри Docker должен быть `lan`, иначе Docker 
 
 Sandbox Docker для agent tools не включён, потому что потребовал бы Docker socket или отдельную sandbox infrastructure. Вместо этого опасные runtime/fs tools отсутствуют на policy layer. Это уменьшает функциональность, но соответствует read/monitor/report use case.
 
-Systemd backup unit по умолчанию запускается как root. Отдельный service user безопаснее, но требует site-specific UID, ownership, Docker group и restic backend credentials; это оставлено оператору, чтобы template не сломал portable deployment.
+Systemd backup unit по умолчанию запускается как root ради переносимости шаблона. После setup его можно перевести на deployment-пользователя с UID `OPENCLAW_UID`, доступом к Docker daemon и restic backend credentials; каталоги state/backup/secrets уже принадлежат этому пользователю.
 
 ## Секреты
 
-`.env` должен иметь mode `0600`; parent secret directory — `0700`. Restic master password обязан храниться отдельно от host, например в password manager. Потеря master password равна потере backup.
+`.env` должен иметь mode `0600`; каталог секретов — `0700`, файл restic password — `0600`. `setup.sh` назначает их deployment-пользователю с UID `OPENCLAW_UID`, поэтому повседневные операции не требуют root. Restic master password обязан храниться также отдельно от host, например в password manager. Потеря master password равна потере backup.
 
 OpenClaw archives содержат credentials и session history. Restic шифрование не отменяет необходимость минимальных permissions и bucket policy. При подозрении на утечку rotate OpenRouter/Telegram/Gateway credentials и создайте новый restic repository/password.
 
@@ -32,7 +32,7 @@ OpenClaw archives содержат credentials и session history. Restic шиф
 docker compose run --rm openclaw-cli doctor --json
 docker compose run --rm openclaw-cli security audit --deep
 docker compose run --rm openclaw-cli plugins list --json
-restic check
+make backup-check
 ```
 
 Проверяйте новые plugins и skills как исполняемый доверенный код. Web/RSS/API content может содержать prompt injection даже при закрытом Telegram.

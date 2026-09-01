@@ -6,8 +6,8 @@
 2. На старом host выполните `./scripts/backup.sh` и `restic check`.
 3. Остановите старый Gateway: `./scripts/stop.sh`.
 4. Убедитесь, что Telegram bot больше не получает updates на старой машине.
-5. На новой машине выполните deployment до `prepare-host.sh`, но не запускайте Gateway.
-6. Подключите тот же restic repository и выполните `./scripts/restore.sh latest`.
+5. На новой машине заполните `.env` теми же recovery-настройками.
+6. Выполните `./scripts/setup.sh restore latest`: он подготовит host, подключит restic и восстановит state, но не запустит Gateway.
 7. Запустите новый Gateway, healthcheck и Telegram test.
 8. Создайте backup с новой машины.
 

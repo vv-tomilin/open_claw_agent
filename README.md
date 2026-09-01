@@ -64,6 +64,8 @@ Gateway публикуется только на `127.0.0.1`. Для удалё�
 
 ## Первый deployment
 
+Если Docker, Compose и restic уже установлены, полный пользовательский сценарий состоит из настройки `.env` и одной команды:
+
 ```bash
 git clone <URL_PRIVATE_REPOSITORY> personal-agent
 cd personal-agent
@@ -71,18 +73,18 @@ cd personal-agent
 cp .env.example .env
 nano .env
 
-sudo ./scripts/bootstrap-server.sh
-
-sudo install -d -m 0700 /srv/personal-agent/secrets
-sudo sh -c 'umask 077; printf "%s\n" "ВСТАВЬТЕ_RESTIC_PASSWORD" > /srv/personal-agent/secrets/restic-password'
-
-sudo ./scripts/prepare-host.sh
-restic init                         # только для нового пустого repository
-docker compose pull
-./scripts/start.sh
+./scripts/setup.sh new
 ```
 
-Не вставляйте реальный restic password в shell history: безопаснее создать файл интерактивным редактором или secret-management механизмом host-машины. Полная процедура и безопасное onboarding описаны в [deployment](docs/deployment.md).
+`setup.sh` проверит конфигурацию, при необходимости один раз вызовет `sudo` для каталогов `/srv`, запросит master password restic без вывода на экран, создаст restic repository, загрузит закреплённый image и запустит Gateway. Пароль не попадает в shell history.
+
+На совсем чистом сервере сначала установите зависимости:
+
+```bash
+sudo ./scripts/bootstrap-server.sh
+```
+
+Если пользователь был добавлен в группу `docker`, войдите в систему повторно, затем запускайте `setup.sh new`. Для повседневной работы без `sudo` рекомендуется deployment-пользователь с UID `1000`, совпадающим с пользователем официального image. При другом UID можно запустить весь сценарий через `sudo ./scripts/setup.sh new`. Подробности: [первое развёртывание](docs/deployment.md).
 
 ## Конфигурация
 
@@ -152,6 +154,7 @@ make down
 
 ```bash
 make backup
+make backup-list
 make backup-check
 make backup-maintenance
 ./scripts/backup-maintenance.sh prune   # запускать отдельно и не слишком часто
@@ -163,15 +166,15 @@ Backup создаётся штатным `openclaw backup create --verify`, по
 
 ## Восстановление
 
-На остановленном Gateway:
+На новой машине после заполнения `.env` существующими credentials:
 
 ```bash
-./scripts/restore.sh latest
-# или
-./scripts/restore.sh <SNAPSHOT_ID>
+./scripts/setup.sh restore latest
 ```
 
-Если обнаружено реальное существующее состояние, нужен явный `--force`. Скрипт не запускает Gateway; старое дерево перемещается в `${PERSONAL_AGENT_BACKUP_DIR}/pre-restore-*`. Подробнее: [backup и restore](docs/backup-restore.md).
+Скрипт запросит существующий master password restic, подготовит каталоги, проверит repository, загрузит image и восстановит state. Gateway намеренно не запускается: сначала убедитесь, что старый экземпляр выключен, затем выполните `./scripts/start.sh`.
+
+Для конкретного snapshot используйте `./scripts/setup.sh restore <SNAPSHOT_ID>`. Если обнаружено реальное существующее состояние, нужен явный третий параметр `--force`. Старое дерево перемещается в `${PERSONAL_AGENT_BACKUP_DIR}/pre-restore-*`. Подробнее: [backup и restore](docs/backup-restore.md).
 
 ## Обновление
 
@@ -193,11 +196,11 @@ Backup создаётся штатным `openclaw backup create --verify`, по
 git clone <URL_PRIVATE_REPOSITORY> personal-agent
 cd personal-agent
 cp .env.example .env
-# восстановить .env и restic password из password manager
+# заполнить .env значениями из password manager
 sudo ./scripts/bootstrap-server.sh
-sudo ./scripts/prepare-host.sh
-docker compose pull
-./scripts/restore.sh latest
+# после повторного входа в систему:
+./scripts/setup.sh restore latest
+# убедиться, что старый экземпляр выключен:
 ./scripts/start.sh
 ./scripts/healthcheck.sh
 ```
@@ -243,11 +246,13 @@ Compose не использует `privileged`, Docker socket, host network, `/r
 
 ```bash
 make validate
+make setup-new
+make setup-restore SNAPSHOT=latest
 docker compose ps
 docker compose logs --tail=200 openclaw-gateway
 curl -fsS http://127.0.0.1:18789/healthz
 docker compose run --rm openclaw-cli doctor --json
-restic snapshots --tag personal-agent
+make backup-list
 ```
 
 Если `openclaw-cli` сообщает, что Gateway недоступен, сначала запустите `openclaw-gateway`: официальный CLI service разделяет его network namespace и является post-start инструментом. Offline backup/verify scripts поэтому запускают CLI entrypoint через one-shot `openclaw-gateway` service.

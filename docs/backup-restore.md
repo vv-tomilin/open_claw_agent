@@ -12,8 +12,10 @@
 
 ```bash
 ./scripts/backup.sh
-restic snapshots --tag personal-agent
+./scripts/backup-maintenance.sh snapshots
 ```
+
+Все проектные скрипты сами загружают `.env`; ручной экспорт переменных не требуется. После `setup.sh new` каталог и файл пароля принадлежат deployment-пользователю, поэтому backup не требует `sudo`, если его UID совпадает с `OPENCLAW_UID`. Systemd unit может продолжать запускаться от root.
 
 Последовательность:
 
@@ -40,24 +42,24 @@ environment validation
 ## Restore на пустой host
 
 ```bash
-./scripts/restore.sh latest
+./scripts/setup.sh restore latest
 ```
 
 Или конкретный snapshot:
 
 ```bash
-restic snapshots --tag personal-agent
-./scripts/restore.sh <SNAPSHOT_ID>
+./scripts/backup-maintenance.sh snapshots
+./scripts/setup.sh restore <SNAPSHOT_ID>
 ```
 
-Скрипт требует остановленный Gateway и восстанавливает restic только во временный каталог. В закреплённой `v2026.7.1-2` нет whole-archive restore command, поэтому выполняются официальный `openclaw backup verify`, безопасная распаковка в новый staging, проверка `manifest.json` и только затем offline activation.
+`setup.sh` подготавливает host, проверяет существующий restic repository, загружает image и вызывает низкоуровневый `restore.sh`. Restore требует остановленный Gateway и восстанавливает restic только во временный каталог. В закреплённой `v2026.7.1-2` нет whole-archive restore command, поэтому выполняются официальный `openclaw backup verify`, безопасная распаковка в новый staging, проверка `manifest.json` и только затем offline activation.
 
 `prepare-host.sh` создаёт initial template, который не считается реальным state. Любые дополнительные state/workspace/auth файлы приводят к отказу. Для осознанной замены:
 
 ```bash
 ./scripts/stop.sh
 ./scripts/backup.sh
-./scripts/restore.sh latest --force
+./scripts/setup.sh restore latest --force
 ```
 
 Старое дерево перемещается в `pre-restore-<UTC_TIMESTAMP>`, а не удаляется. Скрипт не запускает Gateway.

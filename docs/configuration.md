@@ -18,6 +18,8 @@ OpenClaw поддерживает `${UPPERCASE_ENV}` substitution в строк�
 
 `OPENCLAW_UID` и `OPENCLAW_GID` должны совпадать с UID/GID непривилегированного пользователя внутри выбранного image (для официального образа по умолчанию `1000:1000`). Если оператор host-машины имеет другой UID, запускайте backup/restore через root либо выделите service user с этим UID; скрипты откажутся менять владельца без достаточных прав.
 
+`RESTIC_PASSWORD_FILE` указывает на защищённый файл вне Git. `setup.sh new` запрашивает новый master password, а `setup.sh restore` — существующий пароль из password manager; вручную создавать файл и настраивать его владельца не требуется.
+
 ## Версия image
 
 Обычно задаётся только `OPENCLAW_VERSION`. Необязательный `OPENCLAW_IMAGE` полностью переопределяет reference и удобен для pin по immutable digest. Не используйте `latest`, `main` или beta tag в production без осознанного теста.

@@ -40,6 +40,18 @@ require_absolute_path() {
   [[ "${value}" != "/" ]] || fail "Корневой каталог / нельзя использовать как ${name}."
 }
 
+require_safe_managed_directory() {
+  local path="$1"
+  local label="$2"
+
+  [[ "${path}" == /* ]] || fail "${label} должен быть абсолютным POSIX-путём."
+  case "${path%/}" in
+    ""|/|/bin|/boot|/dev|/etc|/home|/lib|/lib64|/opt|/proc|/root|/run|/sbin|/srv|/sys|/tmp|/usr|/var)
+      fail "Небезопасный слишком широкий путь для ${label}: ${path}"
+      ;;
+  esac
+}
+
 compose() {
   docker compose --project-directory "${PROJECT_DIR}" --env-file "${ENV_FILE}" "$@"
 }
@@ -49,6 +61,7 @@ require_restic_env() {
   require_value RESTIC_REPOSITORY
   require_value RESTIC_PASSWORD_FILE
   [[ -f "${RESTIC_PASSWORD_FILE}" ]] || fail "Файл пароля restic не найден: ${RESTIC_PASSWORD_FILE}"
+  [[ -r "${RESTIC_PASSWORD_FILE}" ]] || fail "Файл пароля restic недоступен текущему пользователю: ${RESTIC_PASSWORD_FILE}"
 }
 
 ensure_openclaw_owner() {

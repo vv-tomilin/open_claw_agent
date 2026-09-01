@@ -10,6 +10,10 @@ load_env
 require_restic_env
 
 case "${mode}" in
+  snapshots)
+    log "Список снимков персонального агента."
+    restic snapshots --tag personal-agent
+    ;;
   check)
     log "Проверка целостности restic repository."
     restic check
@@ -30,7 +34,7 @@ case "${mode}" in
       --prune
     restic check
     ;;
-  *) fail "Режим должен быть check, forget или prune." ;;
+  *) fail "Режим должен быть snapshots, check, forget или prune." ;;
 esac
 
 log "УСПЕХ: операция restic ${mode} завершена."

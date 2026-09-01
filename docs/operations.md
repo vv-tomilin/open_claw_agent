@@ -8,7 +8,7 @@
 
 ## Еженедельно
 
-- `restic snapshots --tag personal-agent`;
+- `make backup-list`;
 - `make backup-check`;
 - проверить pairing requests, owner identity и scheduled jobs;
 - контролировать disk usage state/media/logs.
@@ -24,12 +24,15 @@
 
 ```bash
 make validate
+make setup-new
+make setup-restore SNAPSHOT=latest
 make up
 make down
 make restart
 make logs
 make health
 make backup
+make backup-list
 make backup-check
 make backup-maintenance
 make restore SNAPSHOT=latest
@@ -37,7 +40,7 @@ make update
 make dr-test
 ```
 
-`make restore` с существующим state требует `RESTORE_FLAGS=--force`. Перед этим вручную остановите Gateway и создайте backup.
+Для переноса на новую машину используйте `make setup-restore SNAPSHOT=latest`. Низкоуровневый `make restore` с существующим state требует `RESTORE_FLAGS=--force`; перед этим вручную остановите Gateway и создайте backup.
 
 ## Scheduled jobs OpenClaw
 

@@ -24,23 +24,15 @@ cp .env.example .env
 nano .env
 
 sudo ./scripts/bootstrap-server.sh
-sudo install -d -m 0700 /srv/personal-agent/secrets
-sudoedit /srv/personal-agent/secrets/restic-password
-sudo chmod 0600 /srv/personal-agent/secrets/restic-password
-sudo ./scripts/prepare-host.sh
-
-set -a
-. ./.env
-set +a
-restic snapshots --tag personal-agent
-
-docker compose pull
-./scripts/restore.sh latest
+# если bootstrap добавил пользователя в группу docker, повторно войти в систему
+./scripts/setup.sh restore latest
+# ввести существующий master password restic из password manager
+# убедиться, что прежний экземпляр полностью выключен
 ./scripts/start.sh
 ./scripts/healthcheck.sh
 ```
 
-Не выполняйте `restic init` на существующем repository. Не запускайте новый Gateway, пока старый может оставаться активным.
+`setup.sh restore` не выполняет `restic init` и не запускает Gateway. Он создаёт host-каталоги, запрашивает существующий master password, проверяет доступ к snapshots, загружает image и восстанавливает state. Не запускайте новый Gateway, пока старый может оставаться активным.
 
 ## Checklist
 

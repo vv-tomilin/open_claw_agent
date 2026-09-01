@@ -1,9 +1,15 @@
 SHELL := /usr/bin/env bash
 
-.PHONY: validate prepare up down restart logs health backup backup-check backup-maintenance restore update dr-test test-llm
+.PHONY: validate setup-new setup-restore prepare up down restart logs health backup backup-list backup-check backup-maintenance restore update dr-test test-llm
 
 validate:
 	@./scripts/validate.sh
+
+setup-new:
+	@./scripts/setup.sh new
+
+setup-restore:
+	@./scripts/setup.sh restore $(SNAPSHOT) $(RESTORE_FLAGS)
 
 prepare:
 	@sudo ./scripts/prepare-host.sh
@@ -26,6 +32,9 @@ health:
 
 backup:
 	@./scripts/backup.sh
+
+backup-list:
+	@./scripts/backup-maintenance.sh snapshots
 
 backup-check:
 	@./scripts/backup-maintenance.sh check

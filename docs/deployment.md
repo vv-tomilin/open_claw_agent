@@ -23,51 +23,52 @@ sudo ./scripts/bootstrap-server.sh
 
 Скрипт поддерживает Debian/Ubuntu amd64, использует официальный Docker apt repository, устанавливает Compose plugin и restic, но не запускает OpenClaw. После добавления пользователя в группу `docker` выйдите из сессии и войдите снова.
 
-## 3. Restic password
+## 3. Deployment-пользователь
+
+Официальный image использует непривилегированного пользователя с UID/GID `1000:1000`. Самый простой вариант — выполнять deployment пользователем host-машины с UID `1000`, состоящим в группе `docker`. Тогда `sudo` понадобится только один раз для создания `/srv/personal-agent`.
+
+Проверьте окружение:
 
 ```bash
-sudo install -d -m 0700 /srv/personal-agent/secrets
-sudoedit /srv/personal-agent/secrets/restic-password
-sudo chmod 0600 /srv/personal-agent/secrets/restic-password
+id -u
+id -g
+docker ps
 ```
 
-Файл содержит одну строку master password. Копия password должна находиться в password manager вне сервера.
+Если UID отличается, используйте специально созданного deployment-пользователя с UID `1000` либо запускайте весь setup через `sudo`. Не меняйте `OPENCLAW_UID/GID` без проверки пользователя внутри выбранного image.
 
-## 4. Persistent state
+## 4. Новый экземпляр
+
+Для нового пустого restic repository выполните:
 
 ```bash
-sudo ./scripts/prepare-host.sh
+./scripts/setup.sh new
 ```
 
-Скрипт создаёт bind-mount sources с UID/GID из `.env`, устанавливает initial config только при его отсутствии и валидирует Compose. Контейнер не запускается.
+Сценарий автоматически:
 
-Последующие backup/restore-команды можно запускать обычным пользователем, если его UID совпадает с `OPENCLAW_UID` (типичный первый пользователь Debian/Ubuntu — `1000`). При другом UID используйте отдельного service user или запускайте эти операции через `sudo`, сохраняя тот же `.env`.
+- проверяет `.env`, Docker, Compose и restic;
+- при необходимости один раз запрашивает `sudo` для создания `/srv/personal-agent`;
+- создаёт persistent directories с владельцем `OPENCLAW_UID/GID`;
+- интерактивно запрашивает master password restic и сохраняет его с mode `0600`;
+- устанавливает initial `openclaw.json`, не перезаписывая существующий;
+- выполняет `restic init`;
+- загружает закреплённый image;
+- запускает Gateway и healthcheck.
 
-## 5. Restic repository
-
-Для совершенно нового пустого destination:
+Пароль restic храните также в password manager. Если `/srv` уже подготовлен администратором и доступен deployment-пользователю, setup работает полностью без root. При несовпадении UID запустите:
 
 ```bash
-set -a
-. ./.env
-set +a
-restic init
-restic snapshots
+sudo ./scripts/setup.sh new
 ```
 
-Не выполняйте `restic init`, если repository уже существует: для disaster recovery сразу используйте `restic snapshots`.
+`prepare-host.sh` остаётся доступен как низкоуровневая идемпотентная операция, но при обычном deployment отдельно запускать его не требуется.
 
-## 6. Image и запуск
-
-```bash
-docker compose pull
-./scripts/start.sh
-docker compose ps
-```
+## 5. Проверка запуска
 
 Откройте `http://127.0.0.1:18789` локально на host либо через SSH tunnel, выполненный вами вручную с доверенного компьютера. Gateway token вводится в Control UI.
 
-## 7. Telegram pairing
+## 6. Telegram pairing
 
 Отправьте созданному боту личное сообщение, затем:
 
@@ -78,7 +79,7 @@ docker compose run --rm openclaw-cli pairing approve telegram <КОД>
 
 Код действует ограниченное время. Одобряйте только собственный запрос. После первого approval проверьте owner identity и не включайте public DMs.
 
-## 8. Финальные проверки
+## 7. Финальные проверки
 
 ```bash
 ./scripts/healthcheck.sh
@@ -90,7 +91,7 @@ docker compose run --rm openclaw-cli security audit --deep
 
 `make test-llm` выполняется отдельно и только после понимания стоимости запроса.
 
-## 9. Установка systemd timers
+## 8. Установка systemd timers
 
 Templates предполагают системный запуск backup scripts. Отредактируйте путь в конфигурации:
 
@@ -109,4 +110,4 @@ sudo systemctl enable --now personal-agent-backup-check.timer
 systemctl list-timers 'personal-agent-*'
 ```
 
-Unit запускается как root, потому что должен читать protected secrets и обращаться к Docker daemon. Это осознанный trade-off; scripts имеют узкую задачу, `NoNewPrivileges=true` и `UMask=0077`. На более строгом host создайте отдельного service user с доступом только к project/data/restic и адаптируйте unit.
+Шаблон unit по умолчанию запускается как root для максимальной переносимости между серверами. После `setup.sh` это не обязательно: можно добавить в service `User=<deployment-пользователь>`, `Group=<его-группа>` и `SupplementaryGroups=docker`. Этот пользователь должен иметь UID `OPENCLAW_UID`, доступ к project/data/restic и возможность обращаться к Docker daemon.

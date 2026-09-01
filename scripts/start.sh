@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 load_env
 require_command docker
 require_absolute_path PERSONAL_AGENT_DATA_DIR
-[[ -f "${PERSONAL_AGENT_DATA_DIR}/openclaw/openclaw.json" ]] || fail "Сначала выполните sudo ./scripts/prepare-host.sh."
+[[ -f "${PERSONAL_AGENT_DATA_DIR}/openclaw/openclaw.json" ]] || fail "Сначала выполните ./scripts/setup.sh new или ./scripts/setup.sh restore."
 
 compose config --quiet
 log "Запуск закреплённого образа OpenClaw."
