@@ -12,5 +12,16 @@ source = source
   )
   .replace(/,\s*([}\]])/g, "$1");
 
-JSON.parse(source);
-console.log("УСПЕХ: базовый синтаксис шаблона openclaw.json проверен.");
+const config = JSON.parse(source);
+
+if (config.tools?.profile !== "full") {
+  throw new Error('Шаблон должен использовать tools.profile: "full".');
+}
+
+for (const conflictingKey of ["alsoAllow", "deny", "fs"]) {
+  if (Object.hasOwn(config.tools, conflictingKey)) {
+    throw new Error(`В полном профиле не должно быть конфликтующего tools.${conflictingKey}.`);
+  }
+}
+
+console.log("УСПЕХ: синтаксис и полный профиль шаблона openclaw.json проверены.");

@@ -8,6 +8,8 @@
 
 `.env` не входит в backup. OpenRouter key, Telegram token, Gateway token и restic master password восстанавливаются из password manager. Это не позволяет одному украденному restic credential автоматически раскрыть и все operational secrets без содержимого repository и password manager.
 
+Агент с полным профилем может изменять локальный staging в `${PERSONAL_AGENT_BACKUP_DIR}`, потому что каталог монтируется как `/backup` для штатного создания и verify архивов. Удалённый restic repository остаётся защищён: его master password и backend credentials в контейнер не передаются.
+
 ## Создание
 
 ```bash
@@ -69,8 +71,9 @@ environment validation
 1. Проверьте вывод `doctor --json`.
 2. Убедитесь, что исходный экземпляр выключен.
 3. Проверьте Telegram pairing/owner и pending approvals.
-4. Запустите `./scripts/start.sh`.
-5. Выполните healthcheck, Telegram test и новый backup.
+4. Выполните `make enable-agent-access`, если snapshot мог содержать старую ограниченную tool policy; повторный запуск безопасен.
+5. Запустите `./scripts/start.sh`.
+6. Выполните healthcheck, Telegram test и новый backup.
 
 Restore означает возврат delivery/dedupe/approval state во времени. Не повторяйте потенциально side-effecting jobs автоматически. Downloadable plugin `node_modules` не входят в штатный archive; переустановите/обновите нужные plugins и выполните `openclaw skills list`.
 

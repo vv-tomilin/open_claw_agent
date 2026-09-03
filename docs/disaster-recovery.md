@@ -28,6 +28,7 @@ sudo ./scripts/bootstrap-server.sh
 ./scripts/setup.sh restore latest
 # ввести существующий master password restic из password manager
 # убедиться, что прежний экземпляр полностью выключен
+make enable-agent-access
 ./scripts/start.sh
 ./scripts/healthcheck.sh
 ```
@@ -47,6 +48,7 @@ sudo ./scripts/bootstrap-server.sh
 - [ ] Scheduled jobs существуют и проверены на безопасный повтор.
 - [ ] Durable sessions восстановлены; ограничение по активному хвосту transcript учтено.
 - [ ] Pairing и owner identity корректны.
+- [ ] Полный профиль tools включён, host-only restic/R2 credentials отсутствуют в окружении контейнера.
 - [ ] Новый backup успешно записывается с новой машины.
 - [ ] `make dr-test` проходит.
 

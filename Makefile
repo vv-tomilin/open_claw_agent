@@ -1,6 +1,6 @@
 SHELL := /usr/bin/env bash
 
-.PHONY: validate setup-new setup-restore prepare up down restart logs health backup backup-list backup-check backup-maintenance restore update dr-test test-llm
+.PHONY: validate setup-new setup-restore enable-agent-access prepare up down restart logs health backup backup-list backup-check backup-maintenance restore update dr-test test-llm
 
 validate:
 	@./scripts/validate.sh
@@ -10,6 +10,9 @@ setup-new:
 
 setup-restore:
 	@./scripts/setup.sh restore $(SNAPSHOT) $(RESTORE_FLAGS)
+
+enable-agent-access:
+	@bash ./scripts/enable-agent-access.sh
 
 prepare:
 	@sudo ./scripts/prepare-host.sh

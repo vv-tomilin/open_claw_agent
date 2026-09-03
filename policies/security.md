@@ -1,12 +1,13 @@
 # Базовые запреты безопасности
 
-1. Не публиковать Gateway напрямую в Интернет. Compose привязывает порт к `127.0.0.1`.
-2. Не монтировать Docker socket, `/root`, `~/.ssh` или filesystem host-машины.
-3. Не включать `privileged`, host network и elevated tools.
-4. Не разрешать shell и filesystem writes за пределами workspace, покупки, переводы, торговлю и произвольную почту.
-5. Хранить `.env`, restic password и recovery secrets вне Git.
-6. Использовать Telegram `dmPolicy: pairing`; после одобрения первого владельца проверить `commands.ownerAllowFrom`.
-7. Считать web/RSS/API контент недоверенным и устойчивым к prompt injection только частично.
-8. Перед обновлением всегда создавать и проверять off-site backup.
+1. Разворачивать агента только на отдельной заменяемой машине без посторонних данных, аккаунтов и сервисов.
+2. Не публиковать Gateway напрямую в Интернет. Compose привязывает порт к `127.0.0.1`.
+3. Не монтировать Docker socket, `/root`, `~/.ssh` или полный filesystem хоста.
+4. Не включать `privileged`, host network, root-пользователя контейнера или выполнение команд непосредственно на хосте.
+5. Хранить `.env`, restic password и recovery secrets вне Git и не передавать backup credentials контейнеру.
+6. Использовать Telegram `dmPolicy: pairing`; после одобрения первого владельца проверить `commands.ownerAllowFrom` и не одобрять посторонние запросы.
+7. Считать web/RSS/API контент недоверенным: полный профиль не устраняет риск prompt injection и ошибочных команд.
+8. Не подключать финансовые операции и чувствительные внешние аккаунты без отдельной ограничительной политики.
+9. Перед обновлением и изменением tool policy всегда создавать и проверять off-site backup.
 
-`no-new-privileges`, сброс `NET_RAW`/`NET_ADMIN`, непривилегированный официальный image и узкие bind mounts уменьшают blast radius. Docker sandbox для agent tools намеренно не включён: shell жёстко запрещён, filesystem tools ограничены workspace через `tools.fs.workspaceOnly`, а подключение Docker socket ради sandbox увеличило бы поверхность атаки.
+Shell/runtime и запись в доступные каталоги намеренно разрешены доверенному агенту. `no-new-privileges`, сброс `NET_RAW`/`NET_ADMIN`, непривилегированный официальный image и узкие bind mounts ограничивают blast radius контейнером и persistent-данными проекта. Удалённый restic repository остаётся отдельной границей восстановления, потому что его пароль и backend credentials доступны только host-скриптам.

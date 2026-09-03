@@ -6,6 +6,8 @@
 
 OpenClaw поддерживает `${UPPERCASE_ENV}` substitution в строковых значениях JSON5. Поэтому модели, токены и Control UI origin передаются через process environment контейнера.
 
+Compose читает `.env` только для подстановки и передаёт контейнеру явный allowlist переменных OpenClaw. Параметры restic, R2/B2/REST credentials и путь к master password остаются у host-скриптов и в process environment агента не попадают.
+
 ## Обязательные значения `.env`
 
 - `OPENCLAW_VERSION` — закреплённый стабильный tag;
@@ -33,6 +35,12 @@ OpenClaw не имеет отдельного встроенного `heavyModel
 ## Telegram
 
 Token остаётся только в `.env`; config обращается к нему через env substitution. `dmPolicy: pairing`, `groupPolicy: disabled`. Pairing state хранится в `~/.openclaw/credentials` и входит в backup.
+
+## Инструменты агента
+
+Начальный шаблон использует `tools.profile: full`. Это сознательная конфигурация доверенного агента для выделенной машины: shell, filesystem, cron, автоматизации, session и Gateway tools доступны внутри контейнерной границы. Обязательные токены OpenRouter, Telegram и Gateway доступны процессу и shell контейнера.
+
+`prepare-host.sh` не перезаписывает существующий runtime config. Для точечного перехода старого persistent state используйте `make enable-agent-access`; команда сохраняет остальные настройки и безопасна при повторном запуске.
 
 ## Проверка
 

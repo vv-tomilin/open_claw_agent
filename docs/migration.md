@@ -8,8 +8,9 @@
 4. Убедитесь, что Telegram bot больше не получает updates на старой машине.
 5. На новой машине заполните `.env` теми же recovery-настройками.
 6. Выполните `./scripts/setup.sh restore latest`: он подготовит host, подключит restic и восстановит state, но не запустит Gateway.
-7. Запустите новый Gateway, healthcheck и Telegram test.
-8. Создайте backup с новой машины.
+7. Выполните `make enable-agent-access`: для нового snapshot команда подтвердит текущую политику, а для старого точечно включит полный профиль.
+8. Запустите новый Gateway, healthcheck и Telegram test.
+9. Создайте backup с новой машины.
 
 ## Изменение путей
 

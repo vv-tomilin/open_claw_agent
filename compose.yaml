@@ -2,9 +2,6 @@ name: personal-agent
 
 x-openclaw-common: &openclaw-common
   image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:${OPENCLAW_VERSION}}
-  env_file:
-    - path: .env
-      required: false
   environment:
     HOME: /home/node
     OPENCLAW_HOME: /home/node

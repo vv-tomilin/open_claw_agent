@@ -2,6 +2,14 @@
 
 Переносимый Git-ready проект для одного self-hosted OpenClaw на Debian/Ubuntu x86_64. Машина считается заменяемой, конфигурация воспроизводится из Git, состояние живёт вне контейнера, секреты остаются вне Git, а восстановление выполняется из зашифрованного off-site restic repository.
 
+## Рекомендуемая среда
+
+Проект по умолчанию включает доверенному агенту полный профиль инструментов OpenClaw: shell/runtime, чтение и запись доступных контейнеру файлов, cron и автоматизации, управление сессиями и доступные инструменты Gateway. Это позволяет агенту самостоятельно сохранять профиль и память, выполнять команды и создавать периодические задачи без ручного запуска CLI оператором.
+
+Разворачивайте эту конфигурацию только на отдельной заменяемой машине — VPS, VM или физическом сервере, выделенном специально под агента. На ней не должно быть посторонних рабочих нагрузок, личных файлов, браузерных профилей, SSH-ключей и аккаунтов, не относящихся к OpenClaw. Разрешайте SSH только оператору, оставляйте Telegram в режиме pairing и регулярно проверяйте внешний backup.
+
+Не используйте этот профиль на общей рабочей станции или сервере с чувствительными данными и сервисами. Ошибка модели, prompt injection или компрометация одобренного Telegram-аккаунта могут привести к выполнению команд, изменению persistent state, расходам и чтению обязательных токенов OpenRouter, Telegram и Gateway внутри контейнера.
+
 ## Что содержит repository
 
 - Docker Compose deployment на официальном закреплённом image OpenClaw;
@@ -108,6 +116,15 @@ sudo ./scripts/bootstrap-server.sh
 
 Все значения `PLACEHOLDER_*` должны быть заменены. Версия меняется одной строкой `OPENCLAW_VERSION`; полный `OPENCLAW_IMAGE` нужен только для необязательного pin по digest.
 
+Новая установка сразу получает полный профиль. Если persistent state был создан старой версией проекта или восстановлен из старого snapshot, шаблон намеренно не перезаписывает его. После обновления Git-копии выполните:
+
+```bash
+make backup
+make enable-agent-access
+```
+
+`make enable-agent-access` точечно меняет только политику `tools`, проверяет конфигурацию и перезапускает работающий Gateway. Повторный запуск безопасен; модели, Telegram pairing, профиль, память и остальные пользовательские настройки сохраняются.
+
 ## OpenRouter
 
 Используются нативные поля OpenClaw:
@@ -117,7 +134,7 @@ sudo ./scripts/bootstrap-server.sh
 - `agents.defaults.subagents.model` ← `UTILITY_MODEL`;
 - `HEAVY_MODEL` хранится как роль для явного `--model` или будущей automation.
 
-Ключ передаётся только через `OPENROUTER_API_KEY` из `.env`. Ссылки имеют формат `openrouter/<provider>/<model>`. Подробности: [конфигурация](docs/configuration.md) и [политика моделей](policies/models.md).
+Ключ берётся из `OPENROUTER_API_KEY` в `.env` и явно передаётся процессу OpenClaw. При полном профиле shell-команды внутри контейнера могут прочитать этот ключ, как и токены Telegram и Gateway. Ссылки моделей имеют формат `openrouter/<provider>/<model>`. Подробности: [конфигурация](docs/configuration.md) и [политика моделей](policies/models.md).
 
 ## Telegram
 
@@ -188,7 +205,7 @@ Backup создаётся штатным `openclaw backup create --verify`, по
 ./scripts/setup.sh restore latest
 ```
 
-Скрипт запросит существующий master password restic, подготовит каталоги, проверит repository, загрузит image и восстановит state. Gateway намеренно не запускается: сначала убедитесь, что старый экземпляр выключен, затем выполните `./scripts/start.sh`.
+Скрипт запросит существующий master password restic, подготовит каталоги, проверит repository, загрузит image и восстановит state. Gateway намеренно не запускается: сначала убедитесь, что старый экземпляр выключен. Если snapshot был создан до включения полного профиля, выполните `make enable-agent-access`, затем `./scripts/start.sh`.
 
 Для конкретного snapshot используйте `./scripts/setup.sh restore <SNAPSHOT_ID>`. Если обнаружено реальное существующее состояние, нужен явный третий параметр `--force`. Старое дерево перемещается в `${PERSONAL_AGENT_BACKUP_DIR}/pre-restore-*`. Подробнее: [backup и restore](docs/backup-restore.md).
 
@@ -217,6 +234,7 @@ sudo ./scripts/bootstrap-server.sh
 # после повторного входа в систему:
 ./scripts/setup.sh restore latest
 # убедиться, что старый экземпляр выключен:
+make enable-agent-access
 ./scripts/start.sh
 ./scripts/healthcheck.sh
 ```
@@ -256,7 +274,9 @@ PASSWORD MANAGER
 
 ## Безопасность
 
-Compose не использует `privileged`, Docker socket, host network, `/root` или `~/.ssh`. Включены `no-new-privileges`, сброс `NET_RAW`/`NET_ADMIN`, loopback publishing и ротация Docker logs. Агент не получает runtime tools, а filesystem tools ограничены его workspace для профиля и памяти. Детали и trade-offs: [security](docs/security.md).
+Агент получает полный профиль инструментов внутри контейнера и может изменять workspace, runtime state и доступный контейнеру локальный backup staging. При этом Compose не использует `privileged`, Docker socket, host network, `/root` или `~/.ssh`; включены `no-new-privileges`, сброс `NET_RAW`/`NET_ADMIN`, loopback publishing и ротация Docker logs.
+
+Compose не передаёт контейнеру весь `.env`: restic master password и ключи Cloudflare R2 остаются у host-скриптов, поэтому агент не может удалить или расшифровать удалённые snapshots только через своё окружение. Обязательные для OpenClaw токены OpenRouter, Telegram и Gateway доступны процессу и shell внутри контейнера. Детали, остаточные риски и порядок восстановления: [security](docs/security.md) и [backup/restore](docs/backup-restore.md).
 
 ## Диагностика
 
@@ -264,6 +284,7 @@ Compose не использует `privileged`, Docker socket, host network, `/r
 make validate
 make setup-new
 make setup-restore SNAPSHOT=latest
+make enable-agent-access
 docker compose ps
 docker compose logs --tail=200 openclaw-gateway
 curl -fsS http://127.0.0.1:18789/healthz

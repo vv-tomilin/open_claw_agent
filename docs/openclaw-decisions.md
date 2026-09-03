@@ -49,7 +49,7 @@ Token можно передавать переменной `TELEGRAM_BOT_TOKEN`;
 
 ## Health, jobs и security
 
-Контейнерный liveness endpoint — `/healthz`; image содержит собственный Docker healthcheck. Scheduled jobs принадлежат Gateway и сохраняются в shared state, поэтому repository не редактирует их файлы вручную. Tool policy ограничена на уровне OpenClaw config.
+Контейнерный liveness endpoint — `/healthz`; image содержит собственный Docker healthcheck. Scheduled jobs принадлежат Gateway и сохраняются в shared state, поэтому repository не редактирует их файлы вручную. Для доверенного агента на выделенной машине выбран `tools.profile: full`; host isolation обеспечивается непривилегированным контейнером и узкими mounts. Compose не использует `env_file`, чтобы restic/R2 credentials из проектного `.env` не попадали агенту автоматически.
 
 - [Health в Docker](https://docs.openclaw.ai/install/docker#health-checks)
 - [Automations](https://docs.openclaw.ai/cron-jobs)

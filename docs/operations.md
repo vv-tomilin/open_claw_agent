@@ -26,6 +26,7 @@
 make validate
 make setup-new
 make setup-restore SNAPSHOT=latest
+make enable-agent-access
 make up
 make down
 make restart
@@ -40,11 +41,11 @@ make update
 make dr-test
 ```
 
-Для переноса на новую машину используйте `make setup-restore SNAPSHOT=latest`. Низкоуровневый `make restore` с существующим state требует `RESTORE_FLAGS=--force`; перед этим вручную остановите Gateway и создайте backup.
+Для переноса на новую машину используйте `make setup-restore SNAPSHOT=latest`. Если восстановлен старый ограниченный профиль, до запуска Gateway выполните `make enable-agent-access`. Низкоуровневый `make restore` с существующим state требует `RESTORE_FLAGS=--force`; перед этим вручную остановите Gateway и создайте backup.
 
 ## Scheduled jobs OpenClaw
 
-Задания cron работают внутри Gateway и сохраняются в общей SQLite state database. В закреплённой версии управляйте ими штатной CLI (`openclaw cron list|add|edit|remove`), а не ручным редактированием runtime databases. Перед restore проверьте, не повторит ли старое расписание побочные действия.
+Задания cron работают внутри Gateway и сохраняются в общей SQLite state database. Полный профиль позволяет доверенному агенту создавать и изменять их из основной или изолированной сессии. Для ручной проверки оператор использует штатную CLI (`openclaw cron list|add|edit|remove`), а не редактирует runtime databases. Перед restore проверьте, не повторит ли старое расписание побочные действия.
 
 ## Инцидент
 
